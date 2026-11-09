@@ -1,4 +1,4 @@
-# Förderverein Grundschule – Abrechnungs-Manager (v1.0.0)
+# Förderverein Grundschule – Abrechnungs-Manager (v1.3.2)
 
 Plattformunabhängige Abrechnungssoftware für AG- und Kursleiter an Grundschulen mit integrierter Baden-Württemberg-Ferienprüfung, Plausibilitätskontrollen, mobiler Beleg-Erfassung, E-Mail-Einreichung und Kassenwart-AcroForms.
 
@@ -10,10 +10,10 @@ Das System bietet für jeden Einsatzzweck das passende Frontend:
 
 1. **🌐 Universelle Offline-App (PWA) – `apps/pwa/` (NEU & EMPFOHLEN):**
    - **Läuft 100 % lokal ohne Server** im Browser jedes Geräts (iPhone, Android, Windows, Mac, iPad).
-   - Kann direkt auf GitHub Pages gehostet oder als PWA auf dem Smartphone-Homescreen installiert werden.
+   - Ist unter [foerdervereinriedlengs.github.io/foerderverein-abrechnung](https://foerdervereinriedlengs.github.io/foerderverein-abrechnung/) auf GitHub Pages verfügbar und kann als PWA auf dem Smartphone-Homescreen installiert werden.
    - **Kamera-Upload:** Belege direkt mit der Handykamera fotografieren oder als PDF hochladen.
-   - **Direktes Einreichen per E-Mail:** Erzeugte PDFs werden über das native Smartphone-Teilen-Menü oder Mail-Programm direkt an `foerderverein.riedlen-gs@gmx.de` übergeben.
-   - **100 % Client-Side & Datenschutz:** Keine Daten verlassen das Gerät.
+   - **Einreichen per E-Mail:** Die PWA erstellt die PDF lokal und bietet den nativen Teilen-Dialog bzw. eine vorbereitete E-Mail an. Je nach Gerät muss die heruntergeladene PDF noch manuell angehängt werden.
+   - **Client-Side & Datenschutz:** Die Abrechnung wird lokal verarbeitet. Daten verlassen das Gerät erst, wenn sie aktiv geteilt oder versendet werden.
 
 2. **💻 Native Windows-Desktop-Anwendung – `apps/windows/`:**
    - Klassisches Windows-Programm auf Basis von CustomTkinter. Kann über PyInstaller als eigenständige `.exe` gepackt werden.
@@ -25,6 +25,7 @@ Das System bietet für jeden Einsatzzweck das passende Frontend:
 
 ### Hauptfunktionen
 - **Feste Vergütung mit Schutz:** Standard-Stundensatz von **21,00 €/h**, schreibgeschützt. PIN-Bereich (Standard: **`4711`**) für den Vorstand.
+- **Auslagenerstattung ohne Kurs:** Der Überweisungszweck enthält keine Kurs- oder Referenz-ID, sondern nur den Namen der erstattungsberechtigten Person.
 - **BW-Ferien- & Schuljahreslogik:** Dynamische Abrechnungszeiträume nach BW-Sommerferien (2024–2028 offline hinterlegt).
 - **Fristen- & Plausibilitätsprüfung:** Harte Sperren bei Einreichungen nach Kassenprüfungsbeginn (Sommerferien) oder Vorjahresterminen; Vorstandsvermerk bei Periodenüberschreitung; 4-Wochen-Belegpuffer; ISO 7064 Modulo-97 IBAN-Validierung.
 - **PDF-Engine & AcroForms:** Generiert nach Kassenwart-Standard (`Abrechnung_[KursID]_[Datum]_[Leiter].pdf`) mit 3 Unterschriftenblöcken und digital ausfüllbaren Feldern für Vorstand & Kassenwart sowie eingebetteter `abrechnungsdaten.json`.
@@ -72,9 +73,8 @@ foerderverein-abrechnung/
 ### 1. Universelle Offline-App (PWA) starten (Empfohlen):
 - Doppelklick auf [`Start_Offline_PWA.bat`](file:///c:/#Coding/Github/foerderverein-abrechnung/Start_Offline_PWA.bat) (oder in VS Code auf den grünen Button *Offline-App (PWA)*).
 - Öffnet sich sofort in jedem Browser – **ohne Server, ohne Python, ohne Wartezeit**.
-- **Auf Handys:** Sobald der Ordner `apps/pwa/` auf GitHub Pages aktiviert ist, genügt der Link im Safari/Chrome des Handys. Danach läuft sie 100 % offline.
+- **Auf Handys:** Öffne die [GitHub-Pages-App](https://foerdervereinriedlengs.github.io/foerderverein-abrechnung/) in Safari/Chrome und installiere sie bei Bedarf über „Zum Home-Bildschirm“ bzw. „App installieren“. Offline-Funktionen sind verfügbar, sobald die benötigten Dateien geladen und zwischengespeichert wurden.
 
 ### 2. PDF per E-Mail einreichen:
-- Nach dem Klick auf *„Abrechnung prüfen & PDF exportieren“* erscheint der Button:  
-  **`📤 Abrechnung per E-Mail einreichen`**
-- Auf Smartphones öffnet sich das native E-Mail-Teilen-Menü mit vorbefülltem Empfänger (`foerderverein.riedlen-gs@gmx.de`), Betreff, Nachrichtentext und der fertigen PDF als Anhang!
+- Nach dem Klick auf *„Abrechnung prüfen & PDF exportieren“* zuerst die PDF speichern und danach *„E-Mail an Förderverein vorbereiten“* wählen.
+- Der Mail-Entwurf enthält Empfänger, Betreff und Nachrichtentext. Die gespeicherte PDF muss anschließend als Anhang hinzugefügt werden.

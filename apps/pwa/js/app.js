@@ -50,9 +50,9 @@ const IDB_VERSION = 1;
 const IDB_STORE = 'beleg_dateien';
 
 function getIndexedDB() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (!window.indexedDB) {
-      resolve(null);
+      reject(new Error("IndexedDB ist in diesem Browser nicht verfügbar."));
       return;
     }
     const req = window.indexedDB.open(IDB_NAME, IDB_VERSION);
@@ -64,8 +64,7 @@ function getIndexedDB() {
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => {
-      console.warn("IndexedDB Fehler:", req.error);
-      resolve(null);
+      reject(req.error || new Error("IndexedDB konnte nicht geöffnet werden."));
     };
   });
 }
@@ -74,7 +73,6 @@ async function speichereBelegDateiInDB(id, fileObj) {
   if (!id || !fileObj || !fileObj.data) return;
   try {
     const db = await getIndexedDB();
-    if (!db) return;
     const tx = db.transaction(IDB_STORE, 'readwrite');
     tx.objectStore(IDB_STORE).put({
       id: id,
@@ -82,9 +80,14 @@ async function speichereBelegDateiInDB(id, fileObj) {
       type: fileObj.type,
       data: fileObj.data
     });
-    await new Promise((resolve) => { tx.oncomplete = resolve; tx.onerror = resolve; });
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error("IndexedDB konnte den Beleg nicht speichern."));
+      tx.onabort = () => reject(tx.error || new Error("Speichern des Belegs wurde abgebrochen."));
+    });
   } catch (err) {
     console.warn("Konnte Belegdatei nicht in IndexedDB speichern:", err);
+    throw err;
   }
 }
 
@@ -451,7 +454,9 @@ function initEventListeners() {
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
 
-        const jpegBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+        const jpegBlob = await new Promise((resolve, reject) => {
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Bild konnte nicht konvertiert werden.")), 'image/jpeg', 0.88);
+        });
         const jpegBuf = await jpegBlob.arrayBuffer();
 
         const cleanName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
@@ -465,15 +470,12 @@ function initEventListeners() {
       lbl.textContent = `📎 Bereit: ${AppState.aktuelleDatei.name}`;
       lbl.classList.add('text-teal-700', 'font-medium');
     } catch (err) {
-      console.warn("Fehler bei Belegverarbeitung:", err);
-      const arrayBuffer = await file.arrayBuffer();
-      AppState.aktuelleDatei = {
-        name: file.name,
-        type: file.type || 'application/octet-stream',
-        data: new Uint8Array(arrayBuffer)
-      };
-      lbl.textContent = `📎 Bereit: ${file.name}`;
-      lbl.classList.add('text-teal-700', 'font-medium');
+      console.error("Fehler bei Belegverarbeitung:", err);
+      AppState.aktuelleDatei = null;
+      fileInput.value = "";
+      lbl.textContent = "Datei konnte nicht verarbeitet werden";
+      lbl.classList.remove('text-teal-700', 'font-medium');
+      alert("Der Beleg konnte nicht verarbeitet werden. Bitte eine lesbare JPG-, PNG- oder PDF-Datei verwenden.");
     }
   });
 
@@ -529,7 +531,7 @@ async function addBeleg() {
     return;
   }
   const betrag = parseFloat(bStr.replace(',', '.'));
-  if (isNaN(betrag) || betrag <= 0) {
+  if (!Number.isFinite(betrag) || betrag <= 0 || !/^\d+(?:[.,]\d{1,2})?$/.test(bStr)) {
     alert("Bitte einen gültigen Rechnungsbetrag größer als 0 eingeben.");
     return;
   }
@@ -568,12 +570,23 @@ async function addBeleg() {
     dateiData: AppState.aktuelleDatei ? AppState.aktuelleDatei.data : null
   };
 
-  AppState.belege.push(neuerBeleg);
-
   // Dauerhaft in IndexedDB ablegen (überlebt jeden Reload)
   if (AppState.aktuelleDatei) {
-    await speichereBelegDateiInDB(belegId, AppState.aktuelleDatei);
+    try {
+      await speichereBelegDateiInDB(belegId, AppState.aktuelleDatei);
+    } catch (err) {
+      console.error("Belegdatei konnte nicht dauerhaft gespeichert werden:", err);
+      alert("Der Beleganhang konnte nicht dauerhaft gespeichert werden. Bitte Speicherplatz freigeben oder ohne Anhang fortfahren.");
+      AppState.aktuelleDatei = null;
+      document.getElementById('inBelegDatei').value = "";
+      const fileLabel = document.getElementById('lblGewaehlteDatei');
+      fileLabel.textContent = "Kein Anhang gewählt";
+      fileLabel.classList.remove('text-teal-700', 'font-medium');
+      return;
+    }
   }
+
+  AppState.belege.push(neuerBeleg);
 
   // Inputs leeren
   document.getElementById('inBelegDatum').value = "";
@@ -754,7 +767,7 @@ function updateLiveUebersicht() {
   document.getElementById('sumAuslagenBetrag').textContent = `${summen.auslagen.toFixed(2)} €`;
   document.getElementById('sumGesamtBetrag').textContent = `${summen.gesamt.toFixed(2)} €`;
 
-  document.getElementById('sumRefZweck').textContent = `${kid} ${leiter}`.trim();
+  document.getElementById('sumRefZweck').textContent = isBesorgung ? leiter : `${kid} ${leiter}`.trim();
   document.getElementById('sumDateiname').textContent = festerName;
 }
 
@@ -858,7 +871,31 @@ async function starteExportProzess() {
       return;
     }
 
-    const pruefD = (AppState.kurs.ist_mehrtaegig && AppState.kurs.end_datum) ? parseGermanDate(AppState.kurs.end_datum) : kdParsed;
+    const dauer = Number(String(AppState.kurs.dauer).trim().replace(',', '.'));
+    if (!Number.isFinite(dauer) || dauer <= 0) {
+      alert("Bitte eine gültige Unterrichtsdauer größer als 0 Stunden angeben.");
+      return;
+    }
+
+    let pruefD = kdParsed;
+    if (AppState.kurs.ist_mehrtaegig) {
+      const endDatum = parseGermanDate(AppState.kurs.end_datum);
+      if (!endDatum) {
+        alert("Bitte ein gültiges Enddatum für den mehrtägigen Kurs angeben.");
+        return;
+      }
+      if (endDatum < kdParsed) {
+        alert("Das Enddatum darf nicht vor dem Startdatum liegen.");
+        return;
+      }
+      const termine = Number(AppState.kurs.termine_anzahl);
+      if (!Number.isInteger(termine) || termine < 2) {
+        alert("Bitte für einen mehrtägigen Kurs mindestens 2 Termine angeben.");
+        return;
+      }
+      pruefD = endDatum;
+    }
+
     const warns = pruefeKursdatumPlausibilitaet(pruefD);
     const gesperrt = warns.find(w => w.level === "gesperrt");
     if (gesperrt) {

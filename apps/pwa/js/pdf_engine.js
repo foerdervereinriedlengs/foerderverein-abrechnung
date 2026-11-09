@@ -60,7 +60,7 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
   const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
   // A4 Maße in Punkten: 595.28 x 841.89
-  const page = pdfDoc.addPage([595.28, 841.89]);
+  let page = pdfDoc.addPage([595.28, 841.89]);
   const { width, height } = page.getSize();
 
   // Sichere drawText Funktion
@@ -98,7 +98,7 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
     font: fontBold,
     color: cDark,
   });
-  drawSafe("v1.1.0 (Web/Mobile)", {
+  drawSafe("v1.3.2 (Web/Mobile)", {
     x: rightX - 110,
     y: y - 22,
     size: 7,
@@ -285,16 +285,29 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
   drawSafe(auslagenTitle, { x: leftX, y, size: 10, font: fontBold, color: (modus === "besorgung") ? rgb(0.051, 0.580, 0.541) : cPrim });
   y -= 6;
 
-  page.drawRectangle({ x: leftX, y: y - 17, width: tblW, height: 17, color: rgb(0.886, 0.910, 0.941), borderColor: cBorder, borderWidth: 0.5 });
-  drawSafe("Datum", { x: leftX + 6, y: y - 12, size: 8, font: fontBold, color: cDark });
-  drawSafe("Händler / Verwendungszweck", { x: leftX + 85, y: y - 12, size: 8, font: fontBold, color: cDark });
-  drawSafe("Belegnachweis", { x: leftX + 345, y: y - 12, size: 8, font: fontBold, color: cDark });
-  drawSafe("Betrag", { x: rightX - 60, y: y - 12, size: 8, font: fontBold, color: cDark });
-  y -= 17;
+  const drawBelegTableHeader = () => {
+    page.drawRectangle({ x: leftX, y: y - 17, width: tblW, height: 17, color: rgb(0.886, 0.910, 0.941), borderColor: cBorder, borderWidth: 0.5 });
+    drawSafe("Datum", { x: leftX + 6, y: y - 12, size: 8, font: fontBold, color: cDark });
+    drawSafe("Händler / Verwendungszweck", { x: leftX + 85, y: y - 12, size: 8, font: fontBold, color: cDark });
+    drawSafe("Belegnachweis", { x: leftX + 345, y: y - 12, size: 8, font: fontBold, color: cDark });
+    drawSafe("Betrag", { x: rightX - 60, y: y - 12, size: 8, font: fontBold, color: cDark });
+    y -= 17;
+  };
+  drawBelegTableHeader();
 
   const belList = belege && belege.length > 0 ? belege : [{ datum: "–", zweck: "Keine Materialauslagen geltend gemacht", betrag: 0, datei: null }];
+  const minYForApprovalBlocks = 400;
   let bIdx = 1;
   for (const b of belList) {
+    if (y < minYForApprovalBlocks) {
+      drawSafe("Weitere Auslagen folgen auf der nächsten Seite.", { x: leftX, y: y - 9, size: 7.5, font: fontItalic, color: cGray });
+      page = pdfDoc.addPage([width, height]);
+      y = height - 34;
+      drawSafe(`${auslagenTitle} (Fortsetzung)`, { x: leftX, y, size: 10, font: fontBold, color: (modus === "besorgung") ? rgb(0.051, 0.580, 0.541) : cPrim });
+      y -= 6;
+      drawBelegTableHeader();
+    }
+
     page.drawRectangle({ x: leftX, y: y - 17, width: tblW, height: 17, color: rgb(1, 1, 1), borderColor: cBorder, borderWidth: 0.5 });
     drawSafe(String(b.datum || '–'), { x: leftX + 6, y: y - 12, size: 7.5, font: fontRegular, color: cDark });
     drawSafe(String(b.zweck || '').slice(0, 48), { x: leftX + 85, y: y - 12, size: 7.5, font: fontRegular, color: cDark });
@@ -328,7 +341,9 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
 
   // Referenz / Verwendungszweck Kasten
   const refCode = (modus === "besorgung") ? (besorgung?.id || "BESORGUNG") : (kurs?.id || "KURS");
-  const refText = `${refCode} ${stamm.leiter || ''}`.trim();
+  const refText = (modus === "besorgung")
+    ? (stamm.leiter || '')
+    : `${refCode} ${stamm.leiter || ''}`.trim();
   page.drawRectangle({ x: leftX, y: y - 19, width: contentWidth, height: 19, color: rgb(0.945, 0.961, 0.976), borderColor: rgb(0.58, 0.64, 0.72), borderWidth: 0.5 });
   drawSafe("Empfohlener Verwendungszweck für Überweisung:", { x: leftX + 8, y: y - 13, size: 8, font: fontRegular, color: cDark });
   drawSafe(refText, { x: leftX + 235, y: y - 13, size: 8.5, font: fontBold, color: cPrim });
@@ -417,7 +432,7 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
         height: sigDims.height,
       });
     } catch (e) {
-      console.warn("Digitale Unterschrift konnte nicht eingebettet werden:", e);
+      throw new Error(`Die digitale Unterschrift konnte nicht in die PDF eingebettet werden: ${e.message || e}`);
     }
   }
 
@@ -523,7 +538,7 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
       }
       belegNr++;
     } catch (err) {
-      console.warn("Fehler beim Einbetten von Beleg:", err);
+      throw new Error(`Der Beleg "${b.dateiName || b.zweck}" konnte nicht in die PDF eingebettet werden: ${err.message || err}`);
     }
   }
 
@@ -541,12 +556,12 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
     sanitizeForPdf(`IBAN=${stamm.iban || ''}`),
     sanitizeForPdf(`Modus=${modus}`)
   ]);
-  pdfDoc.setCreator("Förderverein der Riedlen-Grundschule e.V. – Abrechnungs-Manager v1.2.0 (PWA)");
+  pdfDoc.setCreator("Förderverein der Riedlen-Grundschule e.V. – Abrechnungs-Manager v1.3.2 (PWA)");
 
   // Maschinenlesbares JSON-Attachment einbetten
   const metaPayload = {
     schema_version: "1.1",
-    app_version: "1.1.0",
+    app_version: "1.3.2",
     modus: modus,
     erstellt_am: new Date().toISOString(),
     stammdaten: stamm,

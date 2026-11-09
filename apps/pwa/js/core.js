@@ -38,11 +38,18 @@ const BW_FERIEN = [
 
 function parseISODate(dStr) {
   if (!dStr) return null;
-  const parts = dStr.split('-');
-  if (parts.length === 3) {
-    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-  }
-  return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dStr);
+  if (!match) return null;
+  return createValidDate(Number(match[1]), Number(match[2]), Number(match[3]));
+}
+
+function createValidDate(year, month, day) {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+  const date = new Date(0);
+  date.setFullYear(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
 }
 
 function parseGermanDate(dStr) {
@@ -50,12 +57,11 @@ function parseGermanDate(dStr) {
   const s = dStr.trim();
   // Formate: TT.MM.JJJJ oder JJJJ-MM-TT
   if (s.includes('.')) {
-    const p = s.split('.');
-    if (p.length === 3) {
-      let y = parseInt(p[2], 10);
-      if (y < 100) y += 2000;
-      return new Date(y, parseInt(p[1], 10) - 1, parseInt(p[0], 10));
-    }
+    const match = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/.exec(s);
+    if (!match) return null;
+    let year = Number(match[3]);
+    if (match[3].length === 2) year += 2000;
+    return createValidDate(year, Number(match[2]), Number(match[1]));
   } else if (s.includes('-')) {
     return parseISODate(s);
   }
