@@ -98,7 +98,7 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
     font: fontBold,
     color: cDark,
   });
-  drawSafe("v1.3.3 (Web/Mobile)", {
+  drawSafe("v1.3.4 (Web/Mobile)", {
     x: rightX - 110,
     y: y - 22,
     size: 7,
@@ -378,7 +378,21 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
 
   // Textbreite auf maximal 505 pt beschränken, damit er NIEMALS rechts herausragt
   const steuerLines = wrapTextToWidth(steuerText, contentWidth - 16, fontRegular, 6.8);
-  const k1H = hatNotiz ? 90 : 80;
+  const lblBem = (modus === "besorgung") ? "Bemerkung des Antragstellers: " : "Bemerkung des Kursleiters: ";
+  const bemLines = hatNotiz
+    ? wrapTextToWidth(`${lblBem}${notizText.trim()}`, contentWidth - 16, fontItalic, 7.0)
+    : [];
+  const k1H = Math.max(80, 54 + steuerLines.length * 8.5 + bemLines.length * 8.5);
+  const k2H = 72;
+  const k3H = 74;
+  const approvalBlocksHeight = k1H + k2H + k3H + 16;
+  if (approvalBlocksHeight + 40 > height - 34) {
+    throw new Error("Die Bemerkung ist zu lang, um zusammen mit den Unterschriftsfeldern auf einer Seite dargestellt zu werden. Bitte kürze die Bemerkung.");
+  }
+  if (y < approvalBlocksHeight + 40) {
+    page = pdfDoc.addPage([width, height]);
+    y = height - 34;
+  }
 
   page.drawRectangle({ x: leftX, y: y - k1H, width: contentWidth, height: k1H, color: cBgHell, borderColor: rgb(0.58, 0.64, 0.72), borderWidth: 0.65 });
   const k1Title = (modus === "besorgung")
@@ -394,10 +408,11 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
   }
 
   // Optionale Notiz des Kursleiters / Antragstellers
-  if (hatNotiz) {
-    const lblBem = (modus === "besorgung") ? "Bemerkung des Antragstellers: " : "Bemerkung des Kursleiters: ";
-    const bemLines = wrapTextToWidth(`${lblBem}${notizText.trim()}`, contentWidth - 16, fontItalic, 7.0);
-    drawSafe(bemLines[0] || "", { x: leftX + 8, y: stY - 2, size: 7.0, font: fontItalic, color: cPrim });
+  if (bemLines.length > 0) {
+    for (const line of bemLines) {
+      drawSafe(line, { x: leftX + 8, y: stY - 2, size: 7.0, font: fontItalic, color: cPrim });
+      stY -= 8.5;
+    }
   }
 
   // Ort, Datum & Unterschriftszeile (unten im Kasten sauber platziert mit viel Platz)
@@ -439,7 +454,6 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
   y -= (k1H + 8);
 
   // --- KASTEN 2: VORSTAND (AcroForms) ---
-  const k2H = 72; // Vergrößert für mehr Platz
   page.drawRectangle({ x: leftX, y: y - k2H, width: contentWidth, height: k2H, color: cBgHell, borderColor: rgb(0.58, 0.64, 0.72), borderWidth: 0.65 });
   const k2Title = (modus === "besorgung")
     ? "2. Sachlich & rechnerisch geprüft / Erstattung genehmigt (Vorstand)"
@@ -471,7 +485,6 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
   y -= (k2H + 8);
 
   // --- KASTEN 3: KASSENWART (AcroForms) ---
-  const k3H = 74; // Vergrößert für mehr Platz
   page.drawRectangle({ x: leftX, y: y - k3H, width: contentWidth, height: k3H, color: rgb(0.941, 0.992, 0.957), borderColor: rgb(0.086, 0.639, 0.290), borderWidth: 0.75 });
   drawSafe("3. Zahlungsanweisung & Ausführungsvermerk des Kassenwarts", { x: leftX + 8, y: y - 13, size: 8.5, font: fontBold, color: cDark });
 
@@ -557,12 +570,12 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
     sanitizeForPdf(`IBAN=${stamm.iban || ''}`),
     sanitizeForPdf(`Modus=${modus}`)
   ]);
-  pdfDoc.setCreator("Förderverein der Riedlen-Grundschule e.V. – Abrechnungs-Manager v1.3.3 (PWA)");
+  pdfDoc.setCreator("Förderverein der Riedlen-Grundschule e.V. – Abrechnungs-Manager v1.3.4 (PWA)");
 
   // Maschinenlesbares JSON-Attachment einbetten
   const metaPayload = {
     schema_version: "1.1",
-    app_version: "1.3.3",
+    app_version: "1.3.4",
     modus: modus,
     erstellt_am: new Date().toISOString(),
     stammdaten: stamm,

@@ -1,4 +1,4 @@
-# Förderverein Grundschule – Abrechnungs-Manager (v1.3.3)
+# Förderverein Grundschule – Abrechnungs-Manager (v1.3.4)
 
 Plattformunabhängige Abrechnungssoftware für AG- und Kursleiter an Grundschulen mit integrierter Baden-Württemberg-Ferienprüfung, Plausibilitätskontrollen, mobiler Beleg-Erfassung, E-Mail-Einreichung und Kassenwart-AcroForms.
 

@@ -234,6 +234,14 @@ function autosave() {
 
 // Modus umschalten (Tabs)
 function setzeModus(m) {
+  if (m !== 'kurs' && m !== 'besorgung') return;
+  if (m !== AppState.modus && AppState.belege.length > 0) {
+    const neuerModus = m === 'besorgung' ? 'Veranstaltung / Besorgung' : 'Kurs / AG';
+    if (!confirm(`Es sind ${AppState.belege.length} Belege erfasst. Sie bleiben beim Moduswechsel erhalten und werden auch in der Abrechnung „${neuerModus}“ verwendet.\n\nMöchtest du trotzdem wechseln?`)) {
+      return;
+    }
+  }
+
   AppState.modus = m;
   const tabKurs = document.getElementById('tabModusKurs');
   const tabBesorgung = document.getElementById('tabModusBesorgung');
@@ -522,28 +530,7 @@ async function addBeleg() {
     return;
   }
 
-  // Plausibilität je nach Modus
-  if (AppState.modus === 'besorgung') {
-    const bDate = parseGermanDate(AppState.besorgung.datum);
-    const plausi = pruefeBesorgungBelegPlausibilitaet(dParsed, bDate);
-    if (!plausi.ok) {
-      if (!confirm(`⚠️ Plausibilitätshinweis:\n\n${plausi.msg}\n\nMöchtest du den Beleg trotzdem übernehmen?`)) {
-        return;
-      }
-    }
-  } else {
-    const kdParsed = parseGermanDate(AppState.kurs.datum);
-    const plausi = pruefeBelegPlausibilitaet(dParsed, kdParsed);
-    if (!plausi.ok) {
-      if (!confirm(`⚠️ Plausibilitätshinweis:\n\n${plausi.msg}\n\nMöchtest du den Beleg trotzdem übernehmen?`)) {
-        return;
-      }
-    } else if (plausi.status === 'vorlauf') {
-      if (!confirm(`ℹ️ Vorlauf-Einkauf:\n\n${plausi.msg}\n\nTrotzdem übernehmen?`)) {
-        return;
-      }
-    }
-  }
+  if (!bestaetigeBelegPlausibilitaet(dParsed)) return;
 
   const belegId = 'bel_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   const neuerBeleg = {
@@ -588,6 +575,25 @@ async function addBeleg() {
   updateLiveUebersicht();
 }
 
+function bestaetigeBelegPlausibilitaet(belegDatum) {
+  let plausi;
+  if (AppState.modus === 'besorgung') {
+    const besorgungsDatum = parseGermanDate(AppState.besorgung.datum);
+    plausi = pruefeBesorgungBelegPlausibilitaet(belegDatum, besorgungsDatum);
+  } else {
+    const kursDatum = parseGermanDate(AppState.kurs.datum);
+    plausi = pruefeBelegPlausibilitaet(belegDatum, kursDatum);
+  }
+
+  if (!plausi.ok) {
+    return confirm(`⚠️ Plausibilitätshinweis:\n\n${plausi.msg}\n\nMöchtest du den Beleg trotz des Hinweises behalten und fortfahren?`);
+  }
+  if (AppState.modus === 'kurs' && plausi.status === 'vorlauf') {
+    return confirm(`ℹ️ Vorlauf-Einkauf:\n\n${plausi.msg}\n\nMöchtest du den Beleg trotz des Hinweises behalten und fortfahren?`);
+  }
+  return true;
+}
+
 // Belegliste rendern
 function renderBelegeListe() {
   const container = document.getElementById('belegeContainer');
@@ -601,26 +607,41 @@ function renderBelegeListe() {
   AppState.belege.forEach((b, idx) => {
     const row = document.createElement('div');
     row.className = "flex justify-between items-center p-2.5 bg-slate-100 rounded-lg border border-slate-200 text-xs";
-    
-    let fileBadge = "";
+
+    const details = document.createElement('div');
+    details.className = "truncate mr-2";
+
+    const addDetail = (text, className) => {
+      const span = document.createElement('span');
+      span.className = className;
+      span.textContent = text;
+      details.appendChild(span);
+    };
+
+    addDetail(`#${idx + 1}`, "font-bold text-slate-800");
+    addDetail(` ${b.datum}:`, "text-slate-500 ml-1");
+    addDetail(` ${b.zweck}`, "font-medium text-slate-700 ml-1");
+    addDetail(` (${parseFloat(b.betrag).toFixed(2)} €)`, "font-bold text-slate-900 ml-1");
+
     if (b.dateiName) {
-      if (b.dateiData) {
-        fileBadge = `<span class="text-teal-700 ml-1 font-semibold" title="Datei dauerhaft gespeichert">📎 ${b.dateiName.slice(0, 16)}</span>`;
-      } else {
-        fileBadge = `<span class="text-amber-600 ml-1 font-bold" title="Datei fehlt – bitte neu anhängen">⚠️ ${b.dateiName.slice(0, 14)} (Datei fehlt)</span>`;
-      }
+      const fileBadge = document.createElement('span');
+      fileBadge.className = b.dateiData
+        ? "text-teal-700 ml-1 font-semibold"
+        : "text-amber-600 ml-1 font-bold";
+      fileBadge.title = b.dateiData ? "Datei dauerhaft gespeichert" : "Datei fehlt – bitte neu anhängen";
+      fileBadge.textContent = b.dateiData
+        ? `📎 ${b.dateiName.slice(0, 16)}`
+        : `⚠️ ${b.dateiName.slice(0, 14)} (Datei fehlt)`;
+      details.appendChild(fileBadge);
     }
 
-    row.innerHTML = `
-      <div class="truncate mr-2">
-        <span class="font-bold text-slate-800">#${idx + 1}</span>
-        <span class="text-slate-500 ml-1">${b.datum}:</span>
-        <span class="font-medium text-slate-700 ml-1">${b.zweck}</span>
-        <span class="font-bold text-slate-900 ml-1">(${parseFloat(b.betrag).toFixed(2)} €)</span>
-        ${fileBadge}
-      </div>
-      <button type="button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs transition" onclick="loescheBeleg(${idx})">X</button>
-    `;
+    const deleteButton = document.createElement('button');
+    deleteButton.type = "button";
+    deleteButton.className = "bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-xs transition";
+    deleteButton.textContent = "X";
+    deleteButton.addEventListener('click', () => window.loescheBeleg(idx));
+
+    row.append(details, deleteButton);
     container.appendChild(row);
   });
 }
@@ -896,6 +917,16 @@ async function starteExportProzess() {
         return;
       }
     }
+  }
+
+  for (let i = 0; i < AppState.belege.length; i++) {
+    const beleg = AppState.belege[i];
+    const belegDatum = parseGermanDate(beleg.datum);
+    if (!belegDatum) {
+      alert(`Ungültiges Datum bei Beleg #${i + 1} (${beleg.zweck}). Bitte den Beleg löschen und mit einem gültigen Datum erneut erfassen.`);
+      return;
+    }
+    if (!bestaetigeBelegPlausibilitaet(belegDatum)) return;
   }
 
   // Prüfung: Sind bei allen Belegen mit Dateinamen auch die Dateien vorhanden?
