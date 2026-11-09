@@ -204,21 +204,12 @@ function generiereKursIdVorschlag(kursTitel, kursDatumStr) {
   return `${sj}-${kuerzel}-01`;
 }
 
-// Besorgungs-ID Vorschlag
-function generiereBesorgungIdVorschlag(anlass, datumStr) {
-  const d = parseGermanDate(datumStr) || new Date();
-  const sj = ermittleSchuljahrDetails(d).code;
-  const clean = (anlass || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const kuerzel = clean.slice(0, 8) || "BESORGUNG";
-  return `${sj}-BES-${kuerzel}`;
-}
-
 // Dateiname nach Kassenwart-Schema (universell für Kurs und Besorgung)
 function generiereDateiname(datumStr, titel, leiter, id, modus = "kurs") {
   const d = parseGermanDate(datumStr) || new Date();
   const dStr = formatDateISO(d);
   const fallback = modus === "besorgung" ? "BESORGUNG" : "KURS";
-  const cleanKid = (id || fallback).toUpperCase().replace(/[^A-Z0-9_-]/g, '_');
+  const cleanKid = (id || (modus === "besorgung" ? titel : fallback) || fallback).toUpperCase().replace(/[^A-Z0-9_-]/g, '_');
   const cleanLeiter = (leiter || "Abrechnung").replace(/[^a-zA-Z0-9äöüÄÖÜß_-]/g, '_').slice(0, 25);
   const praefix = modus === "besorgung" ? "Auslagenerstattung" : "Abrechnung";
   return `${praefix}_${cleanKid}_${dStr}_${cleanLeiter}.pdf`;

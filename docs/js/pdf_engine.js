@@ -98,7 +98,7 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
     font: fontBold,
     color: cDark,
   });
-  drawSafe("v1.3.2 (Web/Mobile)", {
+  drawSafe("v1.3.3 (Web/Mobile)", {
     x: rightX - 110,
     y: y - 22,
     size: 7,
@@ -139,10 +139,10 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
     kastenHeight = 84;
 
     stammFields = [
-      { label1: "Antragsteller / Person:", val1: stamm.leiter || "–", label2: "Beleg-ID / Referenz:", val2: b.id || "–", bold: true },
-      { label1: "Anschrift:", val1: stamm.anschrift || "–", label2: "Anlass / Veranstaltung:", val2: b.anlass || "–" },
-      { label1: "Telefon / E-Mail:", val1: stamm.telefon || "–", label2: "Verwendungszweck:", val2: b.zweck || "–" },
-      { label1: "IBAN:", val1: formatiereIBAN(stamm.iban) || "–", label2: "Abrechnungszeitraum:", val2: bSj.label || `Schuljahr ${bSj.code}` }
+      { label1: "Antragsteller / Person:", val1: stamm.leiter || "–", label2: "Anlass / Veranstaltung:", val2: b.anlass || "–", bold: true },
+      { label1: "Anschrift:", val1: stamm.anschrift || "–", label2: "Verwendungszweck:", val2: b.zweck || "–" },
+      { label1: "Telefon / E-Mail:", val1: stamm.telefon || "–", label2: "IBAN:", val2: formatiereIBAN(stamm.iban) || "–" },
+      { label1: "Abrechnungszeitraum:", val1: bSj.label || `Schuljahr ${bSj.code}`, label2: "", val2: "" }
     ];
   } else {
     // Modus Kurs
@@ -340,7 +340,7 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
   y -= 34;
 
   // Referenz / Verwendungszweck Kasten
-  const refCode = (modus === "besorgung") ? (besorgung?.id || "BESORGUNG") : (kurs?.id || "KURS");
+  const refCode = (modus === "besorgung") ? (besorgung?.anlass || "Auslagenerstattung") : (kurs?.id || "KURS");
   const refText = (modus === "besorgung")
     ? (stamm.leiter || '')
     : `${refCode} ${stamm.leiter || ''}`.trim();
@@ -544,29 +544,35 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
 
   // --- METADATEN & ATTACHMENT ---
   const docTitle = (modus === "besorgung")
-    ? `Auslagenerstattung ${besorgung?.id || ''} - ${besorgung?.anlass || ''}`
+    ? `Auslagenerstattung - ${besorgung?.anlass || ''}`
     : `Abrechnung ${kurs?.id || ''} - ${kurs?.titel || ''}`;
 
   pdfDoc.setTitle(sanitizeForPdf(docTitle));
   pdfDoc.setAuthor(sanitizeForPdf(stamm.leiter || ''));
-  pdfDoc.setSubject(sanitizeForPdf(`Förderverein Beleg-Referenz: ${refCode}`));
+  const vorgangLabel = modus === "besorgung" ? "Anlass" : "Referenz";
+  pdfDoc.setSubject(sanitizeForPdf(`Förderverein ${vorgangLabel}: ${refCode}`));
   pdfDoc.setKeywords([
-    sanitizeForPdf(`Referenz=${refCode}`),
+    sanitizeForPdf(`${vorgangLabel}=${refCode}`),
     sanitizeForPdf(`Betrag=${summen.gesamt.toFixed(2)}`),
     sanitizeForPdf(`IBAN=${stamm.iban || ''}`),
     sanitizeForPdf(`Modus=${modus}`)
   ]);
-  pdfDoc.setCreator("Förderverein der Riedlen-Grundschule e.V. – Abrechnungs-Manager v1.3.2 (PWA)");
+  pdfDoc.setCreator("Förderverein der Riedlen-Grundschule e.V. – Abrechnungs-Manager v1.3.3 (PWA)");
 
   // Maschinenlesbares JSON-Attachment einbetten
   const metaPayload = {
     schema_version: "1.1",
-    app_version: "1.3.2",
+    app_version: "1.3.3",
     modus: modus,
     erstellt_am: new Date().toISOString(),
     stammdaten: stamm,
     kurs: (modus === "kurs") ? kurs : null,
-    besorgung: (modus === "besorgung") ? besorgung : null,
+    besorgung: (modus === "besorgung") ? {
+      anlass: besorgung?.anlass || "",
+      zweck: besorgung?.zweck || "",
+      datum: besorgung?.datum || "",
+      notizen: besorgung?.notizen || ""
+    } : null,
     summen: summen,
     belege: (belege || []).map(b => ({
       datum: b.datum,

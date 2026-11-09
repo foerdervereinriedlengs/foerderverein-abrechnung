@@ -1,4 +1,4 @@
-# Förderverein Grundschule – Abrechnungs-Manager (v1.3.2)
+# Förderverein Grundschule – Abrechnungs-Manager (v1.3.3)
 
 Plattformunabhängige Abrechnungssoftware für AG- und Kursleiter an Grundschulen mit integrierter Baden-Württemberg-Ferienprüfung, Plausibilitätskontrollen, mobiler Beleg-Erfassung, E-Mail-Einreichung und Kassenwart-AcroForms.
 
@@ -25,7 +25,7 @@ Das System bietet für jeden Einsatzzweck das passende Frontend:
 
 ### Hauptfunktionen
 - **Feste Vergütung mit Schutz:** Standard-Stundensatz von **21,00 €/h**, schreibgeschützt. PIN-Bereich (Standard: **`4711`**) für den Vorstand.
-- **Auslagenerstattung ohne Kurs:** Der Überweisungszweck enthält keine Kurs- oder Referenz-ID, sondern nur den Namen der erstattungsberechtigten Person.
+- **Auslagenerstattung ohne Kurs:** Ohne Referenz-ID-Eingabefeld; der Überweisungszweck enthält nur den Namen der erstattungsberechtigten Person.
 - **BW-Ferien- & Schuljahreslogik:** Dynamische Abrechnungszeiträume nach BW-Sommerferien (2024–2028 offline hinterlegt).
 - **Fristen- & Plausibilitätsprüfung:** Harte Sperren bei Einreichungen nach Kassenprüfungsbeginn (Sommerferien) oder Vorjahresterminen; Vorstandsvermerk bei Periodenüberschreitung; 4-Wochen-Belegpuffer; ISO 7064 Modulo-97 IBAN-Validierung.
 - **PDF-Engine & AcroForms:** Generiert nach Kassenwart-Standard (`Abrechnung_[KursID]_[Datum]_[Leiter].pdf`) mit 3 Unterschriftenblöcken und digital ausfüllbaren Feldern für Vorstand & Kassenwart sowie eingebetteter `abrechnungsdaten.json`.

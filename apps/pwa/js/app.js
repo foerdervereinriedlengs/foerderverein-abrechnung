@@ -29,7 +29,6 @@ const AppState = {
     notizen: ""
   },
   besorgung: {
-    id: "",
     anlass: "",
     zweck: "",
     datum: "",
@@ -178,7 +177,9 @@ async function ladeLokaleDaten() {
 
     const sBesorgung = localStorage.getItem('fv_aktuelle_besorgung');
     if (sBesorgung) {
-      AppState.besorgung = Object.assign(AppState.besorgung, JSON.parse(sBesorgung));
+      const savedBesorgung = JSON.parse(sBesorgung);
+      delete savedBesorgung.id;
+      AppState.besorgung = Object.assign(AppState.besorgung, savedBesorgung);
     }
 
     const sBelege = localStorage.getItem('fv_belege');
@@ -284,7 +285,6 @@ function renderUI() {
   document.getElementById('inKursNotizen').value = AppState.kurs.notizen || "";
 
   // Besorgungsdaten
-  document.getElementById('inBesorgungId').value = AppState.besorgung.id || "";
   document.getElementById('inBesorgungAnlass').value = AppState.besorgung.anlass || "";
   document.getElementById('inBesorgungZweck').value = AppState.besorgung.zweck || "";
   document.getElementById('inBesorgungDatum').value = AppState.besorgung.datum || "";
@@ -365,7 +365,7 @@ function initEventListeners() {
   });
 
   // Besorgungsdaten Input
-  ['inBesorgungId', 'inBesorgungZweck', 'inBesorgungDatum', 'inBesorgungNotizen'].forEach(id => {
+  ['inBesorgungZweck', 'inBesorgungDatum', 'inBesorgungNotizen'].forEach(id => {
     document.getElementById(id).addEventListener('input', (e) => {
       const prop = id.replace('inBesorgung', '').toLowerCase();
       AppState.besorgung[prop] = e.target.value;
@@ -377,20 +377,6 @@ function initEventListeners() {
   // Anlass mit Auto-Vorschlag für Besorgungs-ID
   document.getElementById('inBesorgungAnlass').addEventListener('input', (e) => {
     AppState.besorgung.anlass = e.target.value;
-    if (!AppState.besorgung.id && e.target.value.trim().length >= 3) {
-      const sugg = generiereBesorgungIdVorschlag(e.target.value, AppState.besorgung.datum);
-      AppState.besorgung.id = sugg;
-      document.getElementById('inBesorgungId').value = sugg;
-    }
-    autosave();
-    updateLiveUebersicht();
-  });
-
-  // ID Neu vorschlagen Button (Besorgung)
-  document.getElementById('btnSuggestBesorgungId').addEventListener('click', () => {
-    const sugg = generiereBesorgungIdVorschlag(AppState.besorgung.anlass, AppState.besorgung.datum);
-    AppState.besorgung.id = sugg;
-    document.getElementById('inBesorgungId').value = sugg;
     autosave();
     updateLiveUebersicht();
   });
@@ -490,7 +476,7 @@ function initEventListeners() {
 
     if (confirm(promptText)) {
       if (AppState.modus === 'besorgung') {
-        AppState.besorgung = { id: "", anlass: "", zweck: "", datum: "", notizen: "" };
+        AppState.besorgung = { anlass: "", zweck: "", datum: "", notizen: "" };
       } else {
         AppState.kurs = { id: "", titel: "", ag: "", datum: "", dauer: "2.0", ist_mehrtaegig: false, termine_anzahl: "1", end_datum: "", notizen: "" };
       }
@@ -675,7 +661,7 @@ function updateLiveUebersicht() {
 
   if (isBesorgung) {
     titel = AppState.besorgung.anlass || "Keine Veranstaltung angegeben";
-    kid = AppState.besorgung.id || "Noch keine Referenz";
+    kid = "";
     const bDateParsed = parseGermanDate(AppState.besorgung.datum);
     terminText = bDateParsed ? formatDateGerman(bDateParsed) : "–";
 
@@ -687,7 +673,7 @@ function updateLiveUebersicht() {
       periodeText = "Laufendes Schuljahr";
     }
 
-    festerName = generiereDateiname(AppState.besorgung.datum, AppState.besorgung.anlass, leiter, AppState.besorgung.id, "besorgung");
+    festerName = generiereDateiname(AppState.besorgung.datum, AppState.besorgung.anlass, leiter, "", "besorgung");
   } else {
     // Modus Kurs
     titel = AppState.kurs.titel || "Kein Kurstitel";
@@ -714,7 +700,8 @@ function updateLiveUebersicht() {
 
   // DOM updaten
   document.getElementById('sumTitel').textContent = titel;
-  document.getElementById('sumKursId').textContent = isBesorgung ? `Ref: ${kid}` : `ID: ${kid}`;
+  document.getElementById('sumKursId').textContent = `ID: ${kid}`;
+  document.getElementById('sumKursId').classList.toggle('hidden', isBesorgung);
   document.getElementById('sumLeiter').textContent = leiter;
 
   const sumIban = document.getElementById('sumIban');
@@ -854,7 +841,7 @@ async function starteExportProzess() {
       return;
     }
 
-    dateiname = generiereDateiname(AppState.besorgung.datum, AppState.besorgung.anlass, AppState.stamm.leiter, AppState.besorgung.id, "besorgung");
+    dateiname = generiereDateiname(AppState.besorgung.datum, AppState.besorgung.anlass, AppState.stamm.leiter, "", "besorgung");
   } else {
     // Kurs
     if (!AppState.kurs.id.trim()) {
@@ -939,7 +926,7 @@ async function starteExportProzess() {
 async function fahreMitPdfExportFort(mitUnterschrift = true) {
   const isBesorgung = (AppState.modus === 'besorgung');
   const dateiname = isBesorgung
-    ? generiereDateiname(AppState.besorgung.datum, AppState.besorgung.anlass, AppState.stamm.leiter, AppState.besorgung.id, "besorgung")
+    ? generiereDateiname(AppState.besorgung.datum, AppState.besorgung.anlass, AppState.stamm.leiter, "", "besorgung")
     : generiereDateiname(AppState.kurs.datum, AppState.kurs.titel, AppState.stamm.leiter, AppState.kurs.id, "kurs");
 
   const btn = document.getElementById('btnExportPdf');
@@ -1171,9 +1158,9 @@ function oeffneErfolgsModal(blob, dateiname) {
   let emailBody = "";
 
   if (isBesorgung) {
-    emailBetreff = encodeURIComponent(`Auslagenerstattung ${AppState.besorgung.id} - ${AppState.stamm.leiter}`);
+    emailBetreff = encodeURIComponent(`Auslagenerstattung ${AppState.besorgung.anlass} - ${AppState.stamm.leiter}`);
     emailBody = encodeURIComponent(
-      `Hallo Vorstand,\n\nanbei sende ich meine Auslagenerstattung für "${AppState.besorgung.anlass}" (${AppState.besorgung.zweck}, Gesamterstattung: ${summen.gesamt.toFixed(2)} €).\n\nReferenz: ${AppState.besorgung.id}\nAntragsteller: ${AppState.stamm.leiter}\n\nViele Grüße,\n${AppState.stamm.leiter}`
+      `Hallo Vorstand,\n\nanbei sende ich meine Auslagenerstattung für "${AppState.besorgung.anlass}" (${AppState.besorgung.zweck}, Gesamterstattung: ${summen.gesamt.toFixed(2)} €).\n\nAntragsteller: ${AppState.stamm.leiter}\n\nViele Grüße,\n${AppState.stamm.leiter}`
     );
   } else {
     emailBetreff = encodeURIComponent(`Abrechnung ${AppState.kurs.id} - ${AppState.stamm.leiter}`);
@@ -1190,7 +1177,7 @@ function oeffneErfolgsModal(blob, dateiname) {
       try {
         await navigator.share({
           files: [file],
-          title: isBesorgung ? `Auslagenerstattung ${AppState.besorgung.id}` : `Abrechnung ${AppState.kurs.id}`,
+          title: isBesorgung ? `Auslagenerstattung ${AppState.besorgung.anlass}` : `Abrechnung ${AppState.kurs.id}`,
           text: isBesorgung ? `Auslagen für "${AppState.besorgung.anlass}" von ${AppState.stamm.leiter}` : `Abrechnung für Kurs "${AppState.kurs.titel}" von ${AppState.stamm.leiter}`
         });
       } catch (e) {
