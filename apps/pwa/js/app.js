@@ -1184,6 +1184,7 @@ function oeffneErfolgsModal(blob, dateiname) {
 
   // Sendefunktion konfigurieren
   const btnShare = document.getElementById('btnModalShare');
+  const btnFileShare = document.getElementById('btnModalFileShare');
 
   let emailBetreff = "";
   let emailBody = "";
@@ -1205,6 +1206,30 @@ function oeffneErfolgsModal(blob, dateiname) {
   document.getElementById('lblModalEmpfaenger').textContent = VEREIN_EMAIL;
   btnShare.onclick = () => {
     window.location.href = mailtoLink;
+  };
+  btnFileShare.onclick = async () => {
+    const file = new File([blob], dateiname, { type: 'application/pdf' });
+    if (!navigator.share || !navigator.canShare) {
+      alert("Das Teilen von PDF-Dateien wird von diesem Browser nicht unterstützt. Bitte speichere die PDF und hänge sie manuell an den E-Mail-Entwurf an.");
+      return;
+    }
+
+    try {
+      if (!navigator.canShare({ files: [file] })) {
+        alert("Das Teilen von PDF-Dateien wird von diesem Browser nicht unterstützt. Bitte speichere die PDF und hänge sie manuell an den E-Mail-Entwurf an.");
+        return;
+      }
+
+      await navigator.share({
+        files: [file],
+        title: isBesorgung ? `Auslagenerstattung ${AppState.besorgung.anlass}` : `Abrechnung ${AppState.kurs.id}`,
+        text: `Empfänger: ${VEREIN_EMAIL}\n${isBesorgung ? `Auslagenerstattung ${AppState.besorgung.anlass}` : `Abrechnung ${AppState.kurs.id}`} von ${AppState.stamm.leiter}`
+      });
+    } catch (e) {
+      if (!e || e.name !== 'AbortError') {
+        alert(`Die PDF konnte nicht geteilt werden: ${e && e.message ? e.message : "Unbekannter Fehler"}`);
+      }
+    }
   };
 
   modal.classList.remove('hidden');

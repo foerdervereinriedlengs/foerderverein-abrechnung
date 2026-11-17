@@ -30,7 +30,7 @@
       <h1 class="text-sm md:text-base font-bold leading-tight">Förderverein der Riedlen-Grundschule e.V. – Abrechnung</h1>
     </div>
     <div class="flex items-center gap-2">
-      <span class="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">v1.3.5 PWA</span>
+      <span class="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">v1.3.6 PWA</span>
     </div>
   </header>
 
@@ -421,6 +421,12 @@
           <p class="text-[11px] leading-relaxed text-amber-800">
             Schritt 2 öffnet einen E-Mail-Entwurf mit Empfänger, Betreff und Nachricht. Bitte speichere zuerst die PDF (<strong>Schritt 1</strong>) und füge sie anschließend als Anhang hinzu.
           </p>
+          <p class="text-[11px] leading-relaxed text-amber-800">
+            Aus Sicherheitsgründen von Browsern und Betriebssystemen kann die PDF-Datei nicht automatisch an die E-Mail gehängt werden. Bitte speichere zuerst die PDF (<strong>Schritt 1</strong>) und füge sie anschließend als Anhang in die vorbereitete E-Mail ein (<strong>Schritt 2</strong>).
+          </p>
+          <p class="text-[11px] leading-relaxed text-amber-800">
+            Alternativ kannst du die PDF über die Teilen-Funktion übergeben. Dabei wird der Empfänger nicht automatisch gesetzt und muss in der Mail-App ergänzt werden.
+          </p>
         </div>
 
         <p class="text-xs text-slate-700">Empfänger: <strong id="lblModalEmpfaenger" class="select-all"></strong></p>
@@ -432,7 +438,11 @@
 
         <!-- Schritt 2: Mail vorbereiten -->
         <button id="btnModalShare" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow transition flex justify-center items-center gap-2 text-sm">
-          <span>✉️</span> Schritt 2: E-Mail-Entwurf öffnen
+          <span>✉️</span> E-Mail-Entwurf mit Empfänger öffnen
+        </button>
+
+        <button id="btnModalFileShare" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-4 rounded-xl shadow transition flex justify-center items-center gap-2 text-sm">
+          <span>📎</span> PDF teilen (Empfänger manuell ergänzen)
         </button>
 
         <button onclick="schliesseErfolgsModal()" class="w-full text-slate-500 hover:text-slate-700 py-1.5 text-xs font-medium">
