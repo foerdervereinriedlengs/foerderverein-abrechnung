@@ -98,7 +98,7 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
     font: fontBold,
     color: cDark,
   });
-  drawSafe("v1.3.6 (Web/Mobile)", {
+  drawSafe("v1.3.7 (Web/Mobile)", {
     x: rightX - 110,
     y: y - 22,
     size: 7,
@@ -570,12 +570,12 @@ async function erzeugeAbrechnungPDF(stamm, kurs, belege, modus = "kurs", besorgu
     sanitizeForPdf(`IBAN=${stamm.iban || ''}`),
     sanitizeForPdf(`Modus=${modus}`)
   ]);
-  pdfDoc.setCreator("Förderverein der Riedlen-Grundschule e.V. – Abrechnungs-Manager v1.3.6 (PWA)");
+  pdfDoc.setCreator("Förderverein der Riedlen-Grundschule e.V. – Abrechnungs-Manager v1.3.7 (PWA)");
 
   // Maschinenlesbares JSON-Attachment einbetten
   const metaPayload = {
     schema_version: "1.1",
-    app_version: "1.3.6",
+    app_version: "1.3.7",
     modus: modus,
     erstellt_am: new Date().toISOString(),
     stammdaten: stamm,
