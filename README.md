@@ -76,5 +76,5 @@ foerderverein-abrechnung/
 - **Auf Handys:** Öffne die [GitHub-Pages-App](https://foerdervereinriedlengs.github.io/foerderverein-abrechnung/) in Safari/Chrome und installiere sie bei Bedarf über „Zum Home-Bildschirm“ bzw. „App installieren“. Offline-Funktionen sind verfügbar, sobald die benötigten Dateien geladen und zwischengespeichert wurden.
 
 ### 2. PDF per E-Mail einreichen:
-- Nach dem Klick auf *„Abrechnung prüfen & PDF exportieren“* zuerst die PDF speichern und danach *„E-Mail an Förderverein vorbereiten“* wählen.
-- Der Mail-Entwurf enthält Empfänger, Betreff und Nachrichtentext. Die gespeicherte PDF muss anschließend als Anhang hinzugefügt werden.
+- Nach dem Klick auf *„Abrechnung prüfen & PDF exportieren“* zuerst die PDF speichern und danach *„E-Mail-Entwurf öffnen“* wählen.
+- Schritt 2 öffnet den Mail-Entwurf mit Empfänger, Betreff und Nachrichtentext. Die gespeicherte PDF muss anschließend als Anhang hinzugefügt werden.

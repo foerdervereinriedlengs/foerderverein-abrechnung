@@ -1202,23 +1202,9 @@ function oeffneErfolgsModal(blob, dateiname) {
 
   const mailtoLink = `mailto:${VEREIN_EMAIL}?subject=${emailBetreff}&body=${emailBody}`;
 
-  btnShare.onclick = async () => {
-    const file = new File([blob], dateiname, { type: 'application/pdf' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: isBesorgung ? `Auslagenerstattung ${AppState.besorgung.anlass}` : `Abrechnung ${AppState.kurs.id}`,
-          text: isBesorgung ? `Auslagen für "${AppState.besorgung.anlass}" von ${AppState.stamm.leiter}` : `Abrechnung für Kurs "${AppState.kurs.titel}" von ${AppState.stamm.leiter}`
-        });
-      } catch (e) {
-        if (e.name !== 'AbortError') {
-          window.location.href = mailtoLink;
-        }
-      }
-    } else {
-      window.location.href = mailtoLink;
-    }
+  document.getElementById('lblModalEmpfaenger').textContent = VEREIN_EMAIL;
+  btnShare.onclick = () => {
+    window.location.href = mailtoLink;
   };
 
   modal.classList.remove('hidden');

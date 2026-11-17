@@ -419,9 +419,11 @@
             <span>💡</span> Wichtiger Hinweis zum E-Mail-Versand:
           </p>
           <p class="text-[11px] leading-relaxed text-amber-800">
-            Aus Sicherheitsgründen von Browsern und Betriebssystemen kann die PDF-Datei nicht automatisch an die E-Mail gehängt werden. Bitte speichere zuerst die PDF (<strong>Schritt 1</strong>) und füge sie anschließend als Anhang in die vorbereitete E-Mail ein (<strong>Schritt 2</strong>).
+            Schritt 2 öffnet einen E-Mail-Entwurf mit Empfänger, Betreff und Nachricht. Bitte speichere zuerst die PDF (<strong>Schritt 1</strong>) und füge sie anschließend als Anhang hinzu.
           </p>
         </div>
+
+        <p class="text-xs text-slate-700">Empfänger: <strong id="lblModalEmpfaenger" class="select-all"></strong></p>
 
         <!-- Schritt 1: Download -->
         <a id="btnModalDownload" class="w-full bg-[#1e3d59] hover:bg-[#162e43] text-white font-bold py-3 px-4 rounded-xl shadow transition flex justify-center items-center gap-2 text-sm">
@@ -430,7 +432,7 @@
 
         <!-- Schritt 2: Mail vorbereiten -->
         <button id="btnModalShare" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow transition flex justify-center items-center gap-2 text-sm">
-          <span>✉️</span> Schritt 2: E-Mail an Förderverein vorbereiten
+          <span>✉️</span> Schritt 2: E-Mail-Entwurf öffnen
         </button>
 
         <button onclick="schliesseErfolgsModal()" class="w-full text-slate-500 hover:text-slate-700 py-1.5 text-xs font-medium">
