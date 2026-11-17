@@ -77,4 +77,3 @@ foerderverein-abrechnung/
 
 ### 2. PDF per E-Mail einreichen:
 - Der E-Mail-Entwurf übergibt Empfänger, Betreff und Nachrichtentext; die gespeicherte PDF muss manuell angehängt werden.
-- *„PDF teilen“* übergibt die PDF an die Teilen-Funktion des Geräts. Der Empfänger muss in der Mail-App ergänzt werden.
